@@ -1,6 +1,10 @@
 Schooner ![travis-ci-status](https://travis-ci.org/nathantypanski/cs4414-ps4.svg?branch=master)
 ========
 
+> **Note**: I'm in the process of reimplementing this in the latest
+> Rust-nightly. Keep an eye on the Travis CI build tracker to see my
+> progress.
+
 An implementation of the
 [Raft distributed consensus algorithm](https://ramcloud.stanford.edu/wiki/download/attachments/11370504/raft.pdf)
 in Rust.
