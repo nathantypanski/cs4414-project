@@ -19,7 +19,7 @@ static TYPE_TOKEN: &'static str = "Content-Type";
  * Reads a "network" message framed with a content length as an RPC.
  */
 pub fn read_helo<R: Reader>(mut stream: R) -> IoResult<u64> {
-    let mut reader   = ~BufferedReader::new(stream);
+    let mut reader   = box BufferedReader::new(stream);
     let id  = try!(parse_server_id(try!(reader.read_line())));
     reader.unwrap();
     Ok(id)
@@ -29,7 +29,7 @@ pub fn read_helo<R: Reader>(mut stream: R) -> IoResult<u64> {
  * Reads a "network" message framed with a content length as an RPC.
  */
 pub fn read_rpc<R: Reader>(mut stream: R) -> IoResult<RaftRpc> {
-    let mut reader   = ~BufferedReader::new(stream);
+    let mut reader   = box BufferedReader::new(stream);
     let content      = try!(read_str(reader));
     let rpc = str_to_rpc(content);
     rpc
@@ -38,7 +38,7 @@ pub fn read_rpc<R: Reader>(mut stream: R) -> IoResult<RaftRpc> {
 /*
  * Reads a "network" message framed with a content length as a string.
  */
-pub fn read_str<T: Reader>(mut reader: ~BufferedReader<T>) -> IoResult<~str> {
+pub fn read_str<T: Reader>(mut reader: Box<BufferedReader<T>>) -> IoResult<Box<str>> {
     let length  = try!(parse_content_length(try!(reader.read_line())));
     let content = try!(reader.read_exact(length));
     to_result(content.container_as_str().map(|c| c.to_owned()),
@@ -52,7 +52,7 @@ pub fn read_str<T: Reader>(mut reader: ~BufferedReader<T>) -> IoResult<~str> {
 /*
  * Convert an RPC to some bytes we can send over the network.
  */
-pub fn as_network_msg(rpc: RaftRpc) -> ~[u8] {
+pub fn as_network_msg(rpc: RaftRpc) -> Box<[u8]> {
     let content = json::Encoder::str_encode(&rpc);
     let msg = frame_msg(content);
     msg.as_bytes().to_owned()
@@ -61,14 +61,14 @@ pub fn as_network_msg(rpc: RaftRpc) -> ~[u8] {
 /*
  * Frame a str wth the length header.
  */
-pub fn frame_msg(msg: &str) -> ~str {
+pub fn frame_msg(msg: &str) -> Box<str> {
     (make_content_length(msg) + "\n" + msg)
 }
 
 /*
  * Get the length header for a string.
  */
-fn make_content_length(s: &str) -> ~str {
+fn make_content_length(s: &str) -> Box<str> {
     LENGTH_TOKEN + ": " + s.as_bytes().len().to_str()
 }
 
@@ -76,11 +76,11 @@ fn make_content_length(s: &str) -> ~str {
  * Used for first communication with a peer, when
  * they need to tell you their id.
  */
-fn make_id_hdr(id: u64) -> ~str{
+fn make_id_hdr(id: u64) -> Box<str>{
     ID_TOKEN + ": " + id.to_str() + "\n"
 }
 
-pub fn make_id_bytes(id: u64) -> ~[u8]{
+pub fn make_id_bytes(id: u64) -> Box<[u8]> {
     make_id_hdr(id).as_bytes().to_owned()
 }
 
@@ -103,7 +103,7 @@ fn parse_server_id(id_hdr: &str) -> IoResult<u64> {
         .and_then(|i| from_str(i)), "Failed parsing server ID")
 }
 
-pub fn str_to_rpc(text: ~str) -> IoResult<RaftRpc> {
+pub fn str_to_rpc(text: Box<str>) -> IoResult<RaftRpc> {
     let content_json = try!(json::from_str(text)
         .map_err(|e| IoError {
             kind: InvalidInput,
@@ -214,7 +214,7 @@ mod test {
             client_stream.write(msg.as_bytes());
         });
         for server_stream in acceptor.incoming() {
-            let reader = ~BufferedReader::new(server_stream.unwrap());
+            let reader = box BufferedReader::new(server_stream.unwrap());
             let result = read_str(reader);
             assert!(result.is_ok());
             assert!(result.unwrap() == ~"Hello world");

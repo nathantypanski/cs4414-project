@@ -10,7 +10,6 @@ use super::leader::Leader;       // A trait with impl for RaftServerState
 use std::comm::*;
 use std::io::timer::Timer;
 use std::vec::Vec;
-use rand::{task_rng,Rng};
 
 pub struct LockState {
 	locked: bool,

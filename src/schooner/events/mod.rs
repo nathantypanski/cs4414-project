@@ -1,3 +1,6 @@
+extern crate uuid;
+extern crate serialize;
+
 use serialize::{Decodable, Encodable};
 
 // This is just something easy to import that re-exports all the

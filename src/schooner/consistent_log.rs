@@ -1,9 +1,20 @@
-extern crate rand;
 extern crate serialize;
+extern crate uuid;
 
-use std::io::{BufferedReader,BufferedWriter,File,IoResult,IoError,InvalidInput,EndOfFile,Append,Open,Read,Write};
+use std::io::{BufferedReader,
+              BufferedWriter,
+              File,
+              IoResult,
+              IoError,
+              InvalidInput,
+              EndOfFile,
+              Append,
+              Open,
+              Read,
+              Write};
 use std::io::fs;
 use std::vec::Vec;
+use std::rand;
 use uuid::{Uuid, UuidVersion, Version4Random};
 use serialize::{json, Decodable};
 
@@ -26,14 +37,14 @@ pub struct Log {
 
 #[deriving(Decodable, Encodable, Clone, Show, Eq)]
 pub struct LogEntry {
-    pub idx:  u64,  // raft idx in log
-    pub term: u64,  // raft term in log
-    pub data: ~str, // data or "command" to log
-    pub uuid: ~str, // unique id from client, recommended (but not reqd) to be of UUID format
+    pub idx:  u64,      // raft idx in log
+    pub term: u64,      // raft term in log
+    pub data: Box<str>, // data or "command" to log
+    pub uuid: Box<str>,     // unique id from client, recommended (but not reqd) to be of UUID format
 }
 
 impl Log {
-    pub fn new(path: Path) -> IoResult<~Log> {
+    pub fn new(path: Path) -> IoResult<Box<Log>> {
         let mut start_idx = 0;
         let mut term = 0;
         if path.exists() {
@@ -50,7 +61,7 @@ impl Log {
         // TODO: will need a log rotation strategy later
         let file = try!(File::open_mode(&path, Append, Write));
 
-        let lg = ~Log {
+        let lg = box Log {
             file: file,
             path: path,
             idx: start_idx,
@@ -188,7 +199,7 @@ impl Log {
 }
 
 impl LogEntry {
-    fn decode(json_str: &str) -> Result<LogEntry, json::Error> {
+    fn decode(json_str: &str) -> Result<LogEntry, json::BuilderError> {
         match json::from_str(json_str) {
             Ok(jobj) => {
                 let mut decoder = json::Decoder::new(jobj);
@@ -198,17 +209,17 @@ impl LogEntry {
         }
     }
 
-    pub fn encode(&self) -> ~str {
+    pub fn encode(&self) -> Box<str> {
         json::Encoder::str_encode(self)
     }
 }
 
 // TODO: somewhere better?
-fn read_last_entry(path: &Path) -> IoResult<~str> {
+fn read_last_entry(path: &Path) -> IoResult<Box<str>> {
     let file = try!(File::open(path));
     let mut br = BufferedReader::new(file);
 
-    let mut last_line: ~str = ~"";
+    let mut last_line: Box<str> = box "";
     loop {
         match br.read_line() {
             Ok(ln) => last_line = ln,
@@ -222,6 +233,10 @@ fn read_last_entry(path: &Path) -> IoResult<~str> {
 
 #[cfg(test)]
 mod test {
+    extern crate serialize;
+    extern crate uuid;
+
+
     use std::io::fs;
     use std::io::{BufferedReader,File};
 
@@ -253,12 +268,12 @@ mod test {
     fn test_truncate() {
         cleanup();
         // need to write some logs first
-        let logent1 = LogEntry{idx: 1, term: 1, data: ~"a", uuid: ~"u01"};
-        let logent2 = LogEntry{idx: 2, term: 1, data: ~"b", uuid: ~"u02"};
-        let logent3 = LogEntry{idx: 3, term: 1, data: ~"c", uuid: ~"u03"};
-        let logent4 = LogEntry{idx: 4, term: 1, data: ~"d", uuid: ~"u04"};
-        let logent5 = LogEntry{idx: 5, term: 2, data: ~"e", uuid: ~"u05"};
-        let logent6 = LogEntry{idx: 6, term: 2, data: ~"f", uuid: ~"u06"};
+        let logent1 = LogEntry{idx: 1, term: 1, data: box "a", uuid: box "u01"};
+        let logent2 = LogEntry{idx: 2, term: 1, data: box "b", uuid: box "u02"};
+        let logent3 = LogEntry{idx: 3, term: 1, data: box "c", uuid: box "u03"};
+        let logent4 = LogEntry{idx: 4, term: 1, data: box "d", uuid: box "u04"};
+        let logent5 = LogEntry{idx: 5, term: 2, data: box "e", uuid: box "u05"};
+        let logent6 = LogEntry{idx: 6, term: 2, data: box "f", uuid: box "u06"};
 
         let rlog = super::Log::new(Path::new(testlog));
         let mut aer = AppendEntriesReq{term: 1, prev_log_idx: 0, prev_log_term: 0,
@@ -310,7 +325,7 @@ mod test {
     #[test]
     fn test_json_encode_of_LogEntry() {
         let uuidstr = Uuid::new_v4().to_hyphenated_str();
-        let logentry = super::LogEntry{idx: 155, term: 2, data: ~"wc", uuid: uuidstr.clone()};
+        let logentry = super::LogEntry{idx: 155, term: 2, data: box "wc", uuid: uuidstr.clone()};
 
         let jstr = logentry.encode();
         assert!(jstr.len() > 0);
@@ -323,7 +338,7 @@ mod test {
     // using the "right" decode/encode methods?
     #[test]
     fn test_json_decode_of_LogEntry() {
-        let jstr = ~r##"{"idx": 200, "term": 4, "data": "foo", "uuid": "4343"}"##;
+        let jstr = box r##"{"idx": 200, "term": 4, "data": "foo", "uuid": "4343"}"##;
         let jobj = json::from_str(jstr);
         assert!( jobj.is_ok() );
 
@@ -332,26 +347,26 @@ mod test {
 
         assert_eq!(200, logentry.idx);
         assert_eq!(4, logentry.term);
-        assert_eq!(~"foo", logentry.data);
-        assert_eq!(~"4343", logentry.uuid);
+        assert_eq!(box "foo", logentry.data);
+        assert_eq!(box "4343", logentry.uuid);
     }
 
     #[test]
     fn test_decode_log_entry_fn_happy_path() {
-        let jstr = ~r##"{"idx": 200, "term": 4, "data": "foo", "uuid": "deadbeef"}"##;
+        let jstr = box r##"{"idx": 200, "term": 4, "data": "foo", "uuid": "deadbeef"}"##;
         let result = LogEntry::decode(jstr);
         assert!(result.is_ok());
 
         let logentry = result.unwrap();
         assert_eq!(200, logentry.idx);
         assert_eq!(4, logentry.term);
-        assert_eq!(~"foo", logentry.data);
-        assert_eq!(~"deadbeef", logentry.uuid);
+        assert_eq!(box "foo", logentry.data);
+        assert_eq!(box "deadbeef", logentry.uuid);
     }
 
     #[test]
     fn test_decode_log_entry_fn_error_path() {
-        let jstr = ~"{abc}";
+        let jstr = box "{abc}";
         let result = LogEntry::decode(jstr);
         assert!(result.is_err());
     }

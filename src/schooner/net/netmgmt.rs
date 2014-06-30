@@ -6,7 +6,7 @@ use std::io::{Acceptor, Listener, TcpListener, TcpStream, IoResult, BufferedRead
 use std::io::net::tcp::TcpAcceptor;
 use std::io::net::ip::SocketAddr;
 use std::comm::Select;
-use collections::HashMap;
+use std::collections::HashMap;
 use sync::{RWLock, Arc};
 use serialize::json::{Encoder,Error};
 use std::io::timer::sleep;

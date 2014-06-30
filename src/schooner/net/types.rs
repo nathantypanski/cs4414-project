@@ -22,7 +22,7 @@ pub enum MgmtMsg {
     StopMsg,
 }
 
-#[deriving(Clone, Hash, Eq, TotalEq, Show)]
+#[deriving(Clone, Hash, Eq, Show)]
 pub struct NetPeerConfig {
     pub id: u64,
     // Peer's Raft listening address, but not necessarily the port we will

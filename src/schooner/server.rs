@@ -1,3 +1,10 @@
+#![allow(dead_code)]
+#![feature(globs)]
+#![feature(macro_rules)]
+
+extern crate uuid;
+#[phase(plugin, link)] extern crate log;
+
 use super::events::*;
 use super::events::append_entries::{AppendEntriesReq, AppendEntriesRes};
 use super::events::{VoteReq, VoteRes};
@@ -134,7 +141,7 @@ impl RaftServer {
             },
         };
         let peer_configs: Vec<NetPeerConfig> = Vec::new();
-        let peers = Peers::new(conf, ~peer_configs, from_peers_send, from_client_send);
+        let peers = Peers::new(conf, box peer_configs, from_peers_send, from_client_send);
         let heartbeat_interval = self.heartbeat_interval;
 
         spawn(proc() {
@@ -288,7 +295,7 @@ impl RaftServerState {
             ($e:expr) => (
                 match $e {
                     NextState(new_state) => {
-                        debug!("Trans {:?} ==> {:?}", self.current_state, new_state);
+                        // debug!("Trans {:?} ==> {:?}", self.current_state, new_state);
 
                         self.handle_teardown();
 
@@ -297,7 +304,7 @@ impl RaftServerState {
                         continue;
                     },
                     Stop => {
-                        debug!("Stop {:?} ==> ()", self.current_state);
+                        // debug!("Stop {:?} ==> ()", self.current_state);
 
                         self.handle_teardown();
 

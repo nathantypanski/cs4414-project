@@ -9,17 +9,14 @@
 // them. TODO: Remove this line.
 #![allow(dead_code,unused_imports,unused_variable,unused_mut,unnecessary_parens)]
 
-#[phase(syntax, link)]
-extern crate log;
 extern crate rand;
 extern crate serialize;
 extern crate collections;
 extern crate sync;
 extern crate uuid;
-
 extern crate regex;
-#[phase(syntax)] extern crate regex_macros;
-
+#[phase(plugin)] extern crate regex_macros;
+#[phase(plugin, link)] extern crate log;
 
 use std::comm::Select;
 // use std::comm::{Empty, Data, Disconnected};
@@ -28,8 +25,7 @@ use std::vec::Vec;
 use std::io::Timer;
 
 use std::io::IoResult;
-use rand::{task_rng,Rng};
-use sync::TaskPool;
+use rand::Rng;
 
 use self::consistent_log::{Log,LogEntry};
 use self::net::*;

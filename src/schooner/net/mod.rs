@@ -12,7 +12,7 @@ mod types;
 
 #[deriving(Clone)]
 pub struct Peers {
-    peer_configs: ~Vec<NetPeerConfig>,
+    peer_configs: Box<Vec<NetPeerConfig>>,
     msg_peers: Sender<(u64, RaftRpc)>,
     shutdown_send: Sender<u64>,
 }
@@ -32,7 +32,7 @@ impl Peers {
     pub fn new(conf: NetPeerConfig, peer_configs: &Vec<NetPeerConfig>, from_peers_send: Sender<RaftMsg>, from_client_send: Sender<(ClientCmdReq, Sender<ClientCmdRes>)>) -> Peers {
         let (msg_peers, shutdown_send) = NetManager::new(conf, peer_configs, from_peers_send, from_client_send);
         let this = Peers {
-            peer_configs: ~peer_configs.clone(),
+            peer_configs: box peer_configs.clone(),
             msg_peers: msg_peers,
             shutdown_send: shutdown_send,
         };
