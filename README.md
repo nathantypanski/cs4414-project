@@ -1,4 +1,4 @@
-Schooner
+Schooner ![travis-ci-status](https://travis-ci.org/nathantypanski/cs4414-ps4.svg?branch=master)
 ========
 
 An implementation of the
@@ -63,4 +63,3 @@ developed by a group consisiting of:
 The library is licensed under the permissive
 [MIT License](http://opensource.org/licenses/MIT), as defined in the
 `LICENCE` file.
-

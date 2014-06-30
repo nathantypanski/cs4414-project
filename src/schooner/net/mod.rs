@@ -11,13 +11,13 @@ mod peer;
 mod types;
 
 #[deriving(Clone)]
-pub struct Peers {
-    peer_configs: Box<Vec<NetPeerConfig>>,
+pub struct Peers<'ps> {
+    peer_configs: Box<Vec<NetPeerConfig<'ps>>>,
     msg_peers: Sender<(u64, RaftRpc)>,
     shutdown_send: Sender<u64>,
 }
 
-impl Peers {
+impl<'ps> Peers<'ps> {
     /*
      * Spawn the peer controller submodule.
      *

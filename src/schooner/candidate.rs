@@ -27,7 +27,7 @@ pub trait Candidate {
 }
 
 // TODO: Real Implementations
-impl Candidate for RaftServerState {
+impl<'s> Candidate for RaftServerState<'s> {
     fn candidate_setup(&mut self) -> RaftStateTransition {
         Continue
     }

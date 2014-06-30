@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-#[deriving(Decodable, Encodable, Eq, Clone, Show)]
+#[deriving(Decodable, Encodable, Eq, Clone, Show, PartialEq)]
 pub struct VoteReq {
     pub term: u64,
     pub candidate_id: u64,
@@ -9,7 +9,7 @@ pub struct VoteReq {
     pub uuid: Uuid,
 }
 
-#[deriving(Decodable, Encodable, Eq, Clone, Show)]
+#[deriving(Decodable, Encodable, Eq, Clone, Show, PartialEq)]
 pub struct VoteRes {
     pub term: u64,
     pub vote_granted: bool,

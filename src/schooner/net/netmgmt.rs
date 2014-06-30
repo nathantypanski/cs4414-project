@@ -21,13 +21,13 @@ use super::super::events::*;
  * Contains all the information on what peers we have, and manages Schooner's interactions
  * with them.
  */
-pub struct NetManager {
+pub struct NetManager<'a> {
     // config info for this peer
-    conf: NetPeerConfig,
+    conf: NetPeerConfig<'a>,
     // Maps peer IDs to their associated TCP streams.
     peer_id_map: HashMap<u64, Sender<MgmtMsg>>,
     // Peer configurations
-    peer_configs: Vec<NetPeerConfig>,
+    peer_configs: Vec<NetPeerConfig<'a>>,
     // Sender we use to talk back up to Raft. Needed for spawning more peers.
     from_peers_send: Sender<RaftMsg>,
     // Receives peer connections as (id, stream) from listen_peers()
@@ -40,7 +40,7 @@ pub struct NetManager {
     to_peers_recv: Receiver<(u64, RaftRpc)>,
 }
 
-impl NetManager {
+impl<'a> NetManager<'a> {
     // returns: (msg peer sender, shutdown sender).
     pub fn new(conf: NetPeerConfig,
                peer_configs: &Vec<NetPeerConfig>,

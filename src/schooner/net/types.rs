@@ -6,7 +6,7 @@ use super::super::events::*;
 // to make Raft messages. Might not be necessary, provided we can setup
 // those channels in the functions where the RPCs are built out of network
 // bytes.
-#[deriving(Decodable, Encodable, Eq, Clone, Show)]
+#[deriving(Decodable, Encodable, Eq, Clone, Show, PartialEq)]
 pub enum RaftRpc {
     RpcARQ(AppendEntriesReq),
     RpcARS(AppendEntriesRes),
@@ -22,13 +22,15 @@ pub enum MgmtMsg {
     StopMsg,
 }
 
-#[deriving(Clone, Hash, Eq, Show)]
-pub struct NetPeerConfig {
+#[deriving(Clone, Hash, Eq, Show, PartialEq)]
+pub struct NetPeerConfig <'a> {
     pub id: u64,
     // Peer's Raft listening address, but not necessarily the port we will
     // get our request from. Hence the peer should send its id when it
     // makes its first connection to us.
-    pub address: SocketAddr,
+    pub host_addr: &'a str,
+    pub host_port: u16,
     // The port for this field is the peer's client listening port.
-    pub client_addr: SocketAddr,
+    pub client_addr: &'a str,
+    pub client_port: u8
 }

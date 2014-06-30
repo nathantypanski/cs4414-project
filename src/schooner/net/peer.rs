@@ -12,9 +12,9 @@ static CONNECT_TIMEOUT: u64 = 3000;
 
 // Each peer should have one of these, and they should be consistent across
 // nodes.
-pub struct NetPeer {
+pub struct NetPeer<'a> {
     pub id: u64,
-    pub conf: NetPeerConfig,
+    pub conf: NetPeerConfig<'a>,
     // If we have an open connection to this peer, then this will be Some(...).
     pub stream: Option<TcpStream>,
     to_raft: Sender<RaftMsg>,
@@ -22,7 +22,7 @@ pub struct NetPeer {
     shutdown: bool,
 }
 
-impl NetPeer {
+impl<'a> NetPeer<'a> {
 
     /*
      * id: id of local Raft server
@@ -59,7 +59,7 @@ impl NetPeer {
         }
         match TcpStream::connect_timeout(self.conf.address, CONNECT_TIMEOUT) {
             Ok(mut stream) => {
-                if stream.write(make_id_bytes(self.id)).is_err() {
+                if stream.write(make_id_bytes(self.id).as_slice()).is_err() {
                     drop(stream);
                     return false;
                 }
@@ -157,7 +157,7 @@ impl NetPeer {
                 self.to_raft.send(ARQ(aereq, resp_send));
                 let aeres = resp_recv.recv();
                 let msg = as_network_msg(RpcARS(aeres));
-                match stream.write(msg) {
+                match stream.write(msg.as_slice()) {
                     Ok(_) => true,
                     Err(_) => {
                         drop(stream);
@@ -176,7 +176,7 @@ impl NetPeer {
                 self.to_raft.send(VRQ(votereq, resp_send));
                 let voteres = resp_recv.recv();
                 let msg = as_network_msg(RpcVRS(voteres));
-                match stream.write(msg) {
+                match stream.write(msg.as_slice()) {
                     Ok(_) => true,
                     Err(_) => {
                         drop(stream);
@@ -248,11 +248,7 @@ mod test {
         let (send2, recv2) = channel();
         let mut peer1_sd = NetPeer::spawn(2, &pc.clone(), send1);
         let mut peer2_sd = NetPeer::spawn(3, &pc, send2);
-        let listen_addr = SocketAddr {
-            ip: Ipv4Addr(127, 0, 0, 1),
-            port: 8844,
-        };
-        let listener: TcpListener = TcpListener::bind(listen_addr).unwrap();
+        let listener: TcpListener = TcpListener::bind("127.0.0.1", 8844).unwrap();
         let mut acceptor: TcpAcceptor = listener.listen().unwrap();
         // Spawn two peers
         let mut count = 0;

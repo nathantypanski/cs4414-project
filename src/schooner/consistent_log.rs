@@ -1,6 +1,3 @@
-extern crate serialize;
-extern crate uuid;
-
 use std::io::{BufferedReader,
               BufferedWriter,
               File,
@@ -17,6 +14,7 @@ use std::vec::Vec;
 use std::rand;
 use uuid::{Uuid, UuidVersion, Version4Random};
 use serialize::{json, Decodable};
+use serialize::json::DecoderError;
 
 use super::events::append_entries::AppendEntriesReq;
 
@@ -35,12 +33,12 @@ pub struct Log {
     pub logentries: Vec<LogEntry>,  // cache of all entries logged to file (TODO: future keep only last 100? 1000?)
 }
 
-#[deriving(Decodable, Encodable, Clone, Show, Eq)]
+#[deriving(Decodable, Encodable, Clone, Show, Eq, PartialEq)]
 pub struct LogEntry {
-    pub idx:  u64,      // raft idx in log
-    pub term: u64,      // raft term in log
-    pub data: Box<str>, // data or "command" to log
-    pub uuid: Box<str>,     // unique id from client, recommended (but not reqd) to be of UUID format
+    pub idx:  u64,         // raft idx in log
+    pub term: u64,         // raft term in log
+    pub data: Box<String>, // data or "command" to log
+    pub uuid: Box<String>, // unique id from client, recommended (but not reqd) to be of UUID format
 }
 
 impl Log {
@@ -49,7 +47,7 @@ impl Log {
         let mut term = 0;
         if path.exists() {
             let last_entry = try!(read_last_entry(&path));
-            match LogEntry::decode(last_entry) {
+            match LogEntry::decode(last_entry.as_slice()) {
                 Ok(logentry) => {
                     start_idx = logentry.idx;
                     term = logentry.term;
@@ -130,7 +128,7 @@ impl Log {
         }
 
         let jstr = json::Encoder::str_encode(entry) + "\n";
-        try!(self.file.write_str(jstr));
+        try!(self.file.write_str(jstr.as_slice()));
 
         self.idx = entry.idx;
         self.term = entry.term;
@@ -158,12 +156,12 @@ impl Log {
             let mut bw = BufferedWriter::new(tmpfile);
             for ln in br.lines() {
                 let line = ln.unwrap();
-                match LogEntry::decode(line.trim()) {
+                match LogEntry::decode(line.as_slice().trim()) {
                     Ok(curr_ent) => {
                         if curr_ent.idx == entry_idx {
                             break;  // TODO: can you break out of an iterator loop?
                         } else {
-                            try!(bw.write_str(line));
+                            try!(bw.write_str(line.as_slice()));
                         }
                     },
                     Err(e) => fail!("schooner.log.truncate_log: The log {} is corrupted: {:?}",
@@ -199,27 +197,27 @@ impl Log {
 }
 
 impl LogEntry {
-    fn decode(json_str: &str) -> Result<LogEntry, json::BuilderError> {
+    fn decode(json_str: &str) -> Result<LogEntry, json::DecoderError> {
         match json::from_str(json_str) {
             Ok(jobj) => {
                 let mut decoder = json::Decoder::new(jobj);
                 Decodable::decode(&mut decoder)
             },
-            Err(e) => Err(e)
+            Err(e) => fail!("Couldn't decode")
         }
     }
 
-    pub fn encode(&self) -> Box<str> {
+    pub fn encode(&self) -> String {
         json::Encoder::str_encode(self)
     }
 }
 
 // TODO: somewhere better?
-fn read_last_entry(path: &Path) -> IoResult<Box<str>> {
+fn read_last_entry(path: &Path) -> IoResult<Box<String>> {
     let file = try!(File::open(path));
     let mut br = BufferedReader::new(file);
 
-    let mut last_line: Box<str> = box "";
+    let mut last_line: String = "".from_str();
     loop {
         match br.read_line() {
             Ok(ln) => last_line = ln,

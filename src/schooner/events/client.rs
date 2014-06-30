@@ -2,9 +2,9 @@
 
 // TODO: fill this out
 pub struct ClientCmdReq {
-	data: Box<str>
+	data: Box<String>
 }
 
 pub struct ClientCmdRes {
-	data: Box<str>
+	data: Box<String>
 }

@@ -15,6 +15,7 @@ extern crate collections;
 extern crate sync;
 extern crate uuid;
 extern crate regex;
+extern crate debug;
 #[phase(plugin)] extern crate regex_macros;
 #[phase(plugin, link)] extern crate log;
 

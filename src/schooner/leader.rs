@@ -29,7 +29,7 @@ pub trait Leader {
     fn leader_vote_res(&mut self, res: VoteRes) -> RaftStateTransition;
 }
 
-impl Leader for RaftServerState {
+impl<'ss> Leader for RaftServerState<'ss> {
     fn leader_setup(&mut self) -> RaftStateTransition {
         //send initial heartbeat to all followers
         self.leader_heartbeat();

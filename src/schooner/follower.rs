@@ -26,7 +26,7 @@ pub trait Follower {
 }
 
 // TODO: Real Implementations
-impl Follower for RaftServerState {
+impl<'ss> Follower for RaftServerState<'ss> {
     fn follower_setup(&mut self) -> RaftStateTransition {
         Continue
     }

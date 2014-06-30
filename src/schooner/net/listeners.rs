@@ -15,11 +15,11 @@ static CONNECT_TIMEOUT: u64 = 3000;
  * addr: *client* listen address for this server
  * from_clients_send: sends messages from peers back to the main loop.
  */
-pub fn listen_peers(this_id: u64, addr: SocketAddr) -> (Sender<u64>, Receiver<(u64, TcpStream)>) {
+pub fn listen_peers(this_id: u64, addr: &str, port: u16) -> (Sender<u64>, Receiver<(u64, TcpStream)>) {
     let (shutdown_send, shutdown) = channel();
     let (peer_send, peer_recv) = channel();
     spawn(proc() {
-        let listener: TcpListener = TcpListener::bind(addr).unwrap();
+        let listener: TcpListener = TcpListener::bind(addr, port).unwrap();
         let mut acceptor: TcpAcceptor = listener.listen().unwrap();
         debug!("{}: Started listening for peers @ {}", this_id, addr);
         loop {
@@ -57,11 +57,11 @@ pub fn listen_peers(this_id: u64, addr: SocketAddr) -> (Sender<u64>, Receiver<(u
  * from_clients_send: sends messages from peers back to the main loop.
  *
  */
-pub fn listen_clients(this_id: u64, addr: SocketAddr, from_client_send: Sender<(ClientCmdReq, Sender<ClientCmdRes>)>) -> Sender<u64> {
+pub fn listen_clients(this_id: u64, addr: &str, port: u16, from_client_send: Sender<(ClientCmdReq, Sender<ClientCmdRes>)>) -> Sender<u64> {
     // unwrapping because our server is dead in the water if it can't listen on its assigned port
     let (shutdown_send, shutdown_signal) = channel();
     spawn(proc() {
-        let listener: TcpListener = TcpListener::bind(addr).unwrap();
+        let listener: TcpListener = TcpListener::bind(addr, port).unwrap();
         let mut acceptor: TcpAcceptor = listener.listen().unwrap();
         debug!("{}: Started listening for clients @ {}", this_id, addr);
         loop {

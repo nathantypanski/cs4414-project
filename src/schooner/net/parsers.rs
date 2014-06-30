@@ -3,6 +3,7 @@ use std::path::BytesContainer;
 use std::slice::bytes;
 use std::str::from_utf8;
 use std::char::*;
+use std::owned::Box;
 use regex::*;
 use serialize::{Decodable, json};
 use super::types::*;
@@ -38,7 +39,7 @@ pub fn read_rpc<R: Reader>(mut stream: R) -> IoResult<RaftRpc> {
 /*
  * Reads a "network" message framed with a content length as a string.
  */
-pub fn read_str<T: Reader>(mut reader: Box<BufferedReader<T>>) -> IoResult<Box<str>> {
+pub fn read_str<T: Reader>(mut reader: Box<BufferedReader<T>>) -> IoResult<Box<String>> {
     let length  = try!(parse_content_length(try!(reader.read_line())));
     let content = try!(reader.read_exact(length));
     to_result(content.container_as_str().map(|c| c.to_owned()),
@@ -52,7 +53,7 @@ pub fn read_str<T: Reader>(mut reader: Box<BufferedReader<T>>) -> IoResult<Box<s
 /*
  * Convert an RPC to some bytes we can send over the network.
  */
-pub fn as_network_msg(rpc: RaftRpc) -> Box<[u8]> {
+pub fn as_network_msg(rpc: RaftRpc) -> Vec<u8> {
     let content = json::Encoder::str_encode(&rpc);
     let msg = frame_msg(content);
     msg.as_bytes().to_owned()
@@ -61,14 +62,14 @@ pub fn as_network_msg(rpc: RaftRpc) -> Box<[u8]> {
 /*
  * Frame a str wth the length header.
  */
-pub fn frame_msg(msg: &str) -> Box<str> {
+pub fn frame_msg(msg: &str) -> Box<String> {
     (make_content_length(msg) + "\n" + msg)
 }
 
 /*
  * Get the length header for a string.
  */
-fn make_content_length(s: &str) -> Box<str> {
+fn make_content_length(s: &str) -> Box<String> {
     LENGTH_TOKEN + ": " + s.as_bytes().len().to_str()
 }
 
@@ -76,11 +77,11 @@ fn make_content_length(s: &str) -> Box<str> {
  * Used for first communication with a peer, when
  * they need to tell you their id.
  */
-fn make_id_hdr(id: u64) -> Box<str>{
+fn make_id_hdr(id: u64) -> Box<String> {
     ID_TOKEN + ": " + id.to_str() + "\n"
 }
 
-pub fn make_id_bytes(id: u64) -> Box<[u8]> {
+pub fn make_id_bytes(id: u64) -> Vec<u8> {
     make_id_hdr(id).as_bytes().to_owned()
 }
 
@@ -103,7 +104,7 @@ fn parse_server_id(id_hdr: &str) -> IoResult<u64> {
         .and_then(|i| from_str(i)), "Failed parsing server ID")
 }
 
-pub fn str_to_rpc(text: Box<str>) -> IoResult<RaftRpc> {
+pub fn str_to_rpc(text: &str) -> IoResult<RaftRpc> {
     let content_json = try!(json::from_str(text)
         .map_err(|e| IoError {
             kind: InvalidInput,

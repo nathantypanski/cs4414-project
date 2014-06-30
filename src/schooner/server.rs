@@ -163,7 +163,7 @@ impl RaftServer {
 
 // This is the state within the main raft process including the Raft
 // Roles, and the Log.
-pub struct RaftServerState {
+pub struct RaftServerState<'ss> {
     // State Machine
     current_state: RaftNextState,
     is_setup:      bool,
@@ -171,7 +171,7 @@ pub struct RaftServerState {
     // Channel to message the Application State Machine with
     to_app_sm:     Sender<(ClientCmdReq, Sender<ClientCmdRes>)>,
 
-    pub peers:     Peers,
+    pub peers:     Peers<'ss>,
     pub log:       Log,
     pub id:        u64,
     pub peers_to_confirm: Vec<u64>,
@@ -186,7 +186,7 @@ pub struct RaftServerState {
 
 // These are the possible Roles a Raft Peer could be in: Leader,
 // Candidate and Follower
-#[deriving(Eq,Clone,Show)]
+#[deriving(Eq,Clone,Show,PartialEq)]
 pub enum RaftNextState {
     RaftLeader,
     RaftCandidate,
@@ -195,7 +195,7 @@ pub enum RaftNextState {
 
 // An Option<T>-like type for saying whether we should transition or
 // not (used as a return from the callback functions)
-#[deriving(Eq,Clone,Show)]
+#[deriving(Eq, Clone, Show, PartialEq)]
 pub enum RaftStateTransition {
     NextState(RaftNextState),
     Continue,
@@ -250,7 +250,7 @@ macro_rules! state_proxy(
     };
 )
 
-impl RaftServerState {
+impl<'ss> RaftServerState<'ss> {
     fn new(current_state: RaftNextState,
            to_app_sm: Sender<(ClientCmdReq, Sender<ClientCmdRes>)>,
            peers: Peers) -> RaftServerState {
@@ -266,7 +266,7 @@ impl RaftServerState {
             // Raft paper: "persistent state on all servers"
             current_term: 0,
             voted_for: 0,
-            log: *Log::new(Path::new(&"datalog/log.test")).unwrap(), //how to properly index the log files?
+            log: *Log::new(Path::new("datalog/log.test")).unwrap(), //how to properly index the log files?
             // Raft paper: "Volatile state on all servers"
             commit_index: 0,
             last_applied: 0,
